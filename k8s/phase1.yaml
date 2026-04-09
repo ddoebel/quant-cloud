@@ -22,7 +22,7 @@ spec:
         quantcloud/node-role: control
       containers:
       - name: api
-        image: ghcr.io/ddoebel/option-pricing-cluster/api:phase1
+        image: ghcr.io/ddoebel/quant-cloud-api:phase1
         ports:
         - containerPort: 8000
         env:
@@ -82,7 +82,7 @@ spec:
         quantcloud/node-role: worker-main
       containers:
       - name: worker
-        image: ghcr.io/ddoebel/option-pricing-cluster/worker:phase1
+        image: ghcr.io/ddoebel/quant-cloud-worker:phase1
         imagePullPolicy: Always
         env:
         - name: RABBITMQ_USER

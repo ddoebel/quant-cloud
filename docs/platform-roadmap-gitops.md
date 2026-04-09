@@ -65,7 +65,8 @@ Do not switch running manifests to new tags until the images exist in GHCR.
 
 Implemented:
 - `.github/workflows/build-images.yml` builds and pushes API/worker images to GHCR on `master` and manual dispatch.
-- Published tags include `sha-<commit>` and `latest`.
+- Published tags include `sha-<commit>`, `latest`, and `phase1`.
+- Images are named `ghcr.io/<owner>/quant-cloud-api` and `ghcr.io/<owner>/quant-cloud-worker` so `GITHUB_TOKEN` can publish (same repo). Pushing to a different package path (for example an old `option-pricing-cluster/...` name) returns **403** on upload because that package is not writable by this workflow.
 
 Required release sequence:
 1. Build/push commit-tagged images via CI (for example `sha-<commit>`).

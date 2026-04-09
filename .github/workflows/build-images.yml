@@ -15,6 +15,11 @@ permissions:
   contents: read
   packages: write
 
+# Image names must live under packages this repo is allowed to publish. The
+# workflow runs in ddoebel/quant-cloud; GITHUB_TOKEN cannot push to arbitrary
+# paths like ghcr.io/.../option-pricing-cluster/... (403 on blob upload). Use
+# owner-scoped names linked to this repository, e.g. quant-cloud-api.
+
 jobs:
   build-api:
     name: Build API image
@@ -37,10 +42,11 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/ddoebel/option-pricing-cluster/api
+          images: ghcr.io/${{ github.repository_owner }}/quant-cloud-api
           tags: |
             type=sha,prefix=sha-
             type=raw,value=latest
+            type=raw,value=phase1
 
       - name: Build and push API
         uses: docker/build-push-action@v6
@@ -74,10 +80,11 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/ddoebel/option-pricing-cluster/worker
+          images: ghcr.io/${{ github.repository_owner }}/quant-cloud-worker
           tags: |
             type=sha,prefix=sha-
             type=raw,value=latest
+            type=raw,value=phase1
 
       - name: Build and push Worker
         uses: docker/build-push-action@v6
