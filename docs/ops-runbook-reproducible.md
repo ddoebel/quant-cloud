@@ -177,6 +177,16 @@ Your ingress host (`quant.local`) must resolve to a node IP externally (via loca
 
 TLS/production hardening is a separate step (cert-manager, trusted DNS, certificates).
 
+### 8.1) Argo CD UI Ingress (optional)
+
+After application ingress works, you can expose the Argo CD UI with `k8s/argocd-ingress.yaml` (host `argocd.local`, namespace `argocd`). Sync via Git, then:
+
+```bash
+kubectl get ingress -n argocd
+```
+
+Map `argocd.local` in `/etc/hosts` to the same node IP you use for `quant.local`. Port-forward remains a valid fallback when debugging TLS between Traefik and Argo CD. Full steps and troubleshooting are in `docs/ops-notes.md` section 6.
+
 ---
 
 ## 9) Final Verification

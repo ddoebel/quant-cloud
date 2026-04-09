@@ -95,8 +95,21 @@ External check:
 curl http://quant.local/health
 ```
 
+### 6) Argo CD UI via Ingress (optional, after app ingress)
+
+Manifest:
+
+- `k8s/argocd-ingress.yaml` routes **`argocd.local`** to `argocd-server` **:443** with Traefik using **HTTPS** to the pods.
+
+Client:
+
+- Add `YOUR_VPS_IP argocd.local` to `/etc/hosts`.
+- Open `http://argocd.local` (Traefik terminates HTTP on the edge; upstream to Argo CD remains HTTPS on 443).
+
+Credentials and troubleshooting (TLS between Traefik and self-signed Argo cert, optional `url` in `argocd-cm`) are documented in `docs/ops-notes.md` section 6.
+
 ## Next After Step 5
 
-1. Add GitHub Actions to build/push both images to GHCR.
-2. Switch manifests to versioned tags only after CI publishes them.
-3. Optionally automate manifest tag bump in a second workflow once build pipeline is stable.
+1. Switch manifests to immutable image tags only after CI publishes them.
+2. Optionally automate manifest tag bump in a second workflow once the build pipeline is stable.
+3. Harden Argo CD exposure (TLS on the public hostname, SSO) once the ingress path is stable.

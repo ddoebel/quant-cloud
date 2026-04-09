@@ -1,0 +1,31 @@
+# Exposes the Argo CD UI through the cluster ingress (K3s default: Traefik).
+# Apply via Git push (same Application path as other k8s/ manifests). The resource
+# lives in namespace argocd; Argo CD applies it there because metadata.namespace is set.
+#
+# Client: add to /etc/hosts (same VPS IP as quant.local), e.g.:
+#   YOUR_VPS_IP argocd.local
+# Then open: http://argocd.local  (Traefik :80 -> this route)
+#
+# The argocd-server Service uses TLS on port 443. Traefik must use HTTPS when
+# connecting to the pods; the annotations below set that explicitly.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-server
+  namespace: argocd
+  annotations:
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+    traefik.ingress.kubernetes.io/service.passhostheader: "true"
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: argocd.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              number: 443
