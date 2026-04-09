@@ -4,6 +4,7 @@ metadata:
   name: quant-api
   namespace: quant-cloud
 spec:
+  ingressClassName: traefik
   rules:
   - host: quant.local
     http:

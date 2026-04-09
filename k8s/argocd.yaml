@@ -1,0 +1,40 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: quant-cloud
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    namespace: quant-cloud
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: https://github.com/ddoebel/quant-cloud
+    targetRevision: master
+    path: k8s
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: quant-cloud
+  namespace: argocd
+spec:
+  project: default
+  destination:
+    namespace: quant-cloud
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: https://github.com/ddoebel/quant-cloud
+    targetRevision: master
+    path: k8s
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
