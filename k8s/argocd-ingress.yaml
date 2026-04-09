@@ -6,9 +6,10 @@
 #   YOUR_VPS_IP argocd.local
 # Then open: http://argocd.local  (Traefik :80 -> this route)
 #
-# Backend MUST be HTTP (Service port 80), not HTTPS (443). Traefik -> HTTPS to
-# the Argo CD pod breaks with the default self-signed cert (500/502). Enable
-# server.insecure and set url in ConfigMaps — see docs/ops-notes.md section 6.
+# Backend MUST be HTTP to the Service port named "http" (port 80 -> pod 8080)
+# with server.insecure=true. Without that, the pod still speaks TLS on 8080 and
+# plain HTTP from Traefik hangs until the proxy times out (504 Gateway Timeout).
+# See docs/ops-notes.md section 6.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -16,6 +17,10 @@ metadata:
   namespace: argocd
   annotations:
     traefik.ingress.kubernetes.io/service.passhostheader: "true"
+    # Force HTTP to upstream (do not upgrade to HTTPS toward the pod).
+    traefik.ingress.kubernetes.io/service.serversscheme: http
+    # K3s Traefik defaults: use the :80 entrypoint so this route is not bound to websecure only.
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
   rules:
@@ -28,4 +33,4 @@ spec:
           service:
             name: argocd-server
             port:
-              number: 80
+              name: http

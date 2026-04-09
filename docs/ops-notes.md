@@ -152,6 +152,31 @@ kubectl -n kube-system logs -l app.kubernetes.io/name=traefik --tail=50
 
 Confirm the Ingress backend is **port 80** and that `argocd-cm` **`url`** matches how you open the UI.
 
+**If you see 504 Gateway Timeout**
+
+That almost always means Traefik reached the Service but the **pod did not answer plain HTTP** in time: `server.insecure` is missing or **`argocd-server` was not restarted** after patching ConfigMaps. The default server still expects TLS on the container port; sending HTTP stalls until the proxy times out.
+
+Verify and fix:
+
+```bash
+# Must print "true"
+kubectl -n argocd get configmap argocd-cmd-params-cm -o jsonpath="{.data['server.insecure']}{'\n'}"
+
+kubectl rollout restart deployment argocd-server -n argocd
+kubectl -n argocd rollout status deployment argocd-server --timeout=120s
+```
+
+Sanity-check from inside the cluster (should return HTML quickly, not hang):
+
+```bash
+kubectl run argocd-curl --rm -i --restart=Never --image=curlimages/curl:8.5.0 -- \
+  curl -sS -m 10 -o /dev/null -w "%{http_code}\n" http://argocd-server.argocd.svc.cluster.local/
+```
+
+Expect **`200`** or **`302`**. If it **times out**, insecure mode is not active or the Deployment did not pick up the ConfigMap.
+
+Then re-test **`http://argocd.local`**.
+
 **Optional: TLS only at Traefik**
 
 For HTTPS in the browser (`https://argocd.local`), terminate TLS on Traefik (cert on the Ingress) and keep the **HTTP** backend to `argocd-server:80` with `server.insecure` — then set `url` to `https://argocd.local`. See upstream Argo CD ingress documentation.
