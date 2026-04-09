@@ -3,6 +3,8 @@ kind: Deployment
 metadata:
   name: quant-api
   namespace: quant-cloud
+  labels:
+    gitops.quantcloud.io/checkpoint: "step1"
 spec:
   replicas: 1
   selector:
