@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quant-api
+  namespace: quant-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quant-api
+  template:
+    metadata:
+      labels:
+        app: quant-api
+    spec:
+      enableServiceLinks: false
+      imagePullSecrets:
+      - name: ghcr-creds
+      nodeSelector:
+        quantcloud/node-role: control
+      containers:
+      - name: api
+        image: ghcr.io/ddoebel/option-pricing-cluster/api:phase1
+        ports:
+        - containerPort: 8000
+        env:
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: quant-cloud-secrets
+              key: API_KEY
+        - name: RABBITMQ_USER
+          value: quant
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: quant-cloud-secrets
+              key: RABBITMQ_PASSWORD
+        - name: RABBITMQ_HOST
+          value: rabbitmq
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: quant-api
+  namespace: quant-cloud
+spec:
+  selector:
+    app: quant-api
+  ports:
+  - port: 80
+    targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quant-worker
+  namespace: quant-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quant-worker
+  template:
+    metadata:
+      labels:
+        app: quant-worker
+    spec:
+      enableServiceLinks: true
+      imagePullSecrets:
+      - name: ghcr-creds
+      nodeSelector:
+        quantcloud/node-role: worker-main
+      containers:
+      - name: worker
+        image: ghcr.io/ddoebel/option-pricing-cluster/worker:phase1
+        imagePullPolicy: Always
+        env:
+        - name: RABBITMQ_USER
+          value: quant
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: quant-cloud-secrets
+              key: RABBITMQ_PASSWORD
+        - name: RABBITMQ_PORT_NUMBER
+          value: "5672"
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "2"
+            memory: "1Gi"

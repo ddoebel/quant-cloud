@@ -1,0 +1,28 @@
+global:
+  security:
+    allowInsecureImages: true
+image:
+  registry: docker.io
+  repository: bitnamilegacy/rabbitmq
+  tag: latest
+
+auth:
+  username: quant
+  password: rbmqpw
+
+replicaCount: 1
+
+persistence:
+  enabled: true
+  size: 8Gi
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
+  limits:
+    cpu: "1"
+    memory: "1Gi"
+
+nodeSelector:
+  quantcloud/node-role: worker-main
