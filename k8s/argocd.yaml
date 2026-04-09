@@ -4,6 +4,7 @@ metadata:
   name: quant-cloud
   namespace: argocd
 spec:
+  project: default
   destination:
     namespace: quant-cloud
     server: https://kubernetes.default.svc
