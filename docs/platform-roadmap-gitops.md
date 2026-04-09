@@ -100,14 +100,16 @@ curl http://quant.local/health
 
 Manifest:
 
-- `k8s/argocd-ingress.yaml` routes **`argocd.local`** to `argocd-server` **:443** with Traefik using **HTTPS** to the pods.
+- `k8s/argocd-ingress.yaml` routes **`argocd.local`** to `argocd-server` **:80** (HTTP to the pod). Traefik must not use HTTPS to the pod unless you configure backend TLS trust; the default self-signed cert on 443 commonly yields **500** errors.
+
+Cluster:
+
+- One-time `argocd-cmd-params-cm` (`server.insecure`) and `argocd-cm` (`url`) patches — see `docs/ops-notes.md` section 6.
 
 Client:
 
 - Add `YOUR_VPS_IP argocd.local` to `/etc/hosts`.
-- Open `http://argocd.local` (Traefik terminates HTTP on the edge; upstream to Argo CD remains HTTPS on 443).
-
-Credentials and troubleshooting (TLS between Traefik and self-signed Argo cert, optional `url` in `argocd-cm`) are documented in `docs/ops-notes.md` section 6.
+- Open `http://argocd.local`.
 
 ## Next After Step 5
 

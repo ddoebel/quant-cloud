@@ -6,15 +6,15 @@
 #   YOUR_VPS_IP argocd.local
 # Then open: http://argocd.local  (Traefik :80 -> this route)
 #
-# The argocd-server Service uses TLS on port 443. Traefik must use HTTPS when
-# connecting to the pods; the annotations below set that explicitly.
+# Backend MUST be HTTP (Service port 80), not HTTPS (443). Traefik -> HTTPS to
+# the Argo CD pod breaks with the default self-signed cert (500/502). Enable
+# server.insecure and set url in ConfigMaps — see docs/ops-notes.md section 6.
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: argocd-server
   namespace: argocd
   annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: https
     traefik.ingress.kubernetes.io/service.passhostheader: "true"
 spec:
   ingressClassName: traefik
@@ -28,4 +28,4 @@ spec:
           service:
             name: argocd-server
             port:
-              number: 443
+              number: 80

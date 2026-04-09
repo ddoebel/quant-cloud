@@ -99,12 +99,31 @@ If that secret is gone, use the password you set when you rotated credentials.
 
 ### Option B — Ingress via Traefik (GitOps)
 
-The repo includes `k8s/argocd-ingress.yaml`. It creates an `Ingress` in namespace `argocd` that routes host **`argocd.local`** to the `argocd-server` Service on **port 443**, with Traefik configured to speak **HTTPS** to the Argo CD pods (required because the server serves TLS by default).
+The repo includes `k8s/argocd-ingress.yaml`. It routes **`argocd.local`** to **`argocd-server` port 80 (HTTP)**. The default Argo CD install serves **TLS on 443**; pointing Traefik at 443 with HTTPS upstream often hits **self-signed cert** issues and you see **500 Internal Server Error**, **502**, or blank pages. **Do not** use port 443 behind Traefik unless you add TLS trust (ServersTransport `insecureSkipVerify`, or trusted certs).
+
+**One-time cluster setup (required for Ingress)**
+
+Run these on the cluster **once** (they merge into existing ConfigMaps; safe for typical installs):
+
+```bash
+# Serve UI/API over HTTP on port 80 so Traefik can proxy without verifying pod TLS
+kubectl patch configmap argocd-cmd-params-cm -n argocd --type merge \
+  -p '{"data":{"server.insecure":"true"}}'
+
+# Tell Argo CD its public URL (must match what you type in the browser)
+kubectl patch configmap argocd-cm -n argocd --type merge \
+  -p '{"data":{"url":"http://argocd.local"}}'
+
+kubectl rollout restart deployment argocd-server -n argocd
+kubectl -n argocd rollout status deployment argocd-server --timeout=120s
+```
+
+If you use a **different hostname**, change `url` accordingly.
 
 **What this does**
 
-- **Traefik** receives HTTP on the cluster ingress entrypoint (for example port 80 on the node / load balancer).
-- It forwards to **`argocd-server:443`** using **HTTPS**, matching how Argo CD’s API/UI expect to be reached behind a reverse proxy.
+- **Traefik** receives HTTP on the ingress entrypoint (for example port 80).
+- It forwards **HTTP** to **`argocd-server:80`**, which matches `server.insecure` mode.
 
 **Client setup**
 
@@ -124,21 +143,16 @@ The repo includes `k8s/argocd-ingress.yaml`. It creates an `Ingress` in namespac
 
 3. Open **`http://argocd.local`** in the browser and log in with `admin` and the password from the secret above.
 
-**If the UI does not load or you see TLS errors between Traefik and Argo CD**
+**If you still see 500 or a blank page**
 
-Default Argo CD uses a **self-signed** certificate. Some Traefik setups refuse HTTPS upstream without extra trust configuration. Remedies (pick one):
+```bash
+kubectl -n argocd logs deploy/argocd-server --tail=80
+kubectl -n kube-system logs -l app.kubernetes.io/name=traefik --tail=50
+```
 
-- **Recommended for homelab:** Run Argo CD API server in **insecure** mode so Traefik talks HTTP to port 80 (TLS only at the edge). Set in `argocd-cmd-params-cm`:
+Confirm the Ingress backend is **port 80** and that `argocd-cm` **`url`** matches how you open the UI.
 
-  `server.insecure: "true"`
+**Optional: TLS only at Traefik**
 
-  Then change the Ingress backend to use **port 80** and remove the need for HTTPS to the pod (adjust `argocd-ingress.yaml` accordingly), **or**
-
-- Configure Traefik **ServersTransport** (or equivalent) with `insecureSkipVerify` for the upstream to `argocd-server`, **or**
-
-- Use **cert-manager** / trusted certs on `argocd-server` so Traefik can validate the backend.
-
-**Optional: correct redirects in the UI**
-
-If links or redirects in the UI point at the wrong URL, set the external URL in `argocd-cm` (for example `url: http://argocd.local` or `https://argocd.local` depending on how you terminate TLS). See the upstream Argo CD “Ingress” documentation for your exact scenario.
+For HTTPS in the browser (`https://argocd.local`), terminate TLS on Traefik (cert on the Ingress) and keep the **HTTP** backend to `argocd-server:80` with `server.insecure` — then set `url` to `https://argocd.local`. See upstream Argo CD ingress documentation.
 
