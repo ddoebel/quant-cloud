@@ -63,9 +63,13 @@ Validation:
 
 Do not switch running manifests to new tags until the images exist in GHCR.
 
+Implemented:
+- `.github/workflows/build-images.yml` builds and pushes API/worker images to GHCR on `master` and manual dispatch.
+- Published tags include `sha-<commit>` and `latest`.
+
 Required release sequence:
-1. Build/push `api:v0.1.0` and `worker:v0.1.0`.
-2. Update `k8s/phase1.yaml` image tags.
+1. Build/push commit-tagged images via CI (for example `sha-<commit>`).
+2. Update `k8s/phase1.yaml` image tags to those immutable tags.
 3. Push Git.
 4. Verify Argo sync and rollout.
 
