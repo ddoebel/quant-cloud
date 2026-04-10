@@ -61,21 +61,26 @@ Validation:
 
 ### 5) Versioned image tags (gated rollout)
 
-Do not switch running manifests to new tags until the images exist in GHCR.
+This is now automated in CI: images are built and the deployment manifest is updated to immutable tags automatically.
 
 Implemented:
 - `.github/workflows/build-images.yml` builds and pushes API/worker images to GHCR on `master` and manual dispatch.
 - Published tags include `sha-<commit>`, `latest`, and `phase1`.
 - Images are named `ghcr.io/<owner>/quant-cloud-api` and `ghcr.io/<owner>/quant-cloud-worker` so `GITHUB_TOKEN` can publish (same repo). Pushing to a different package path (for example an old `option-pricing-cluster/...` name) returns **403** on upload because that package is not writable by this workflow.
+- After both images are pushed, the workflow updates `k8s/phase1.yaml` to:
+  - `ghcr.io/<owner>/quant-cloud-api:sha-<commit>`
+  - `ghcr.io/<owner>/quant-cloud-worker:sha-<commit>`
+  then commits and pushes the manifest change back to `master`.
 
-Required release sequence:
-1. Build/push commit-tagged images via CI (for example `sha-<commit>`).
-2. Update `k8s/phase1.yaml` image tags to those immutable tags.
-3. Push Git.
-4. Verify Argo sync and rollout.
+Automated release sequence:
+1. Push app code (or manually dispatch the workflow).
+2. CI builds/pushes API and worker images.
+3. CI commits immutable image tags into `k8s/phase1.yaml`.
+4. ArgoCD detects the manifest commit and syncs.
+5. Verify rollout from the checklist below.
 
 Why this gate exists:
-- Changing tags before push would break deployment with image pull errors.
+- The manifest is only bumped after image push succeeds, so ArgoCD never points at tags that do not exist yet.
 
 ## Standard Verification Checklist
 
@@ -113,6 +118,6 @@ Client:
 
 ## Next After Step 5
 
-1. Switch manifests to immutable image tags only after CI publishes them.
-2. Optionally automate manifest tag bump in a second workflow once the build pipeline is stable.
+1. Add rollback guidance (revert the auto-bump commit to redeploy previous SHA tags).
+2. Optionally split build and deploy-manifest update into separate workflows/environments.
 3. Harden Argo CD exposure (TLS on the public hostname, SSO) once the ingress path is stable.

@@ -181,3 +181,23 @@ Then re-test **`http://argocd.local`**.
 
 For HTTPS in the browser (`https://argocd.local`), terminate TLS on Traefik (cert on the Ingress) and keep the **HTTP** backend to `argocd-server:80` with `server.insecure` — then set `url` to `https://argocd.local`. See upstream Argo CD ingress documentation.
 
+---
+
+## 7) Automated image tag management (CI -> GitOps)
+
+The workflow `.github/workflows/build-images.yml` now performs tag management automatically:
+
+1. Build/push API and worker images to GHCR.
+2. Publish immutable tag `sha-<commit>` (plus `latest` and `phase1`).
+3. Update `k8s/phase1.yaml` image references to that immutable SHA tag.
+4. Commit and push the manifest change back to `master`.
+5. ArgoCD detects the new manifest commit and deploys it.
+
+Result:
+- No manual image-tag editing for normal releases.
+- Every deployment is traceable to a specific Git commit via image tag.
+- Manifest updates occur only after successful image push, preventing broken tag references.
+
+Rollback:
+- Revert the auto-bump commit in Git to the previous known-good SHA tag, then push.
+
